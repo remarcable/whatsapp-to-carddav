@@ -2,19 +2,25 @@
   "name": "whatsapp-to-carddav",
   "version": "0.1.0",
   "description": "Sync WhatsApp profile pictures to a Nextcloud, Google Contacts, iCloud, etc.",
-  "main": "index.js",
-  "scripts": {
-    "start": "node ./index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "author": "Marc N.",
+  "license": "MIT",
   "keywords": [
     "whatsapp",
     "carddav",
     "sync",
     "photos"
   ],
-  "author": "Marc N.",
-  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@adiwajshing/baileys": "^3.3.2",
+    "lodash.chunk": "^4.2.0",
+    "node-fetch": "^2.6.1"
+  },
   "devDependencies": {
     "prettier": "2.2.1"
   }
