@@ -1,9 +1,9 @@
 import vCard from "vcf";
-
 import {
   getPhoneNumbersFromVCard,
   comparePhoneNumbers,
   matchWhatsAppProfilesWithVCards,
+  contactHasNewPhoto,
 } from "./helpers";
 
 describe("getPhoneNumbersFromVCard", () => {
@@ -131,5 +131,66 @@ END:VCARD\r
     expect(matchWhatsAppProfilesWithVCards(whatsAppProfiles, vCards)).toEqual(
       expected
     );
+  });
+});
+
+describe("contactHasNewPhoto", () => {
+  it("returns true when the contact doesn't have a photo yet", () => {
+    const contact = {
+      profile: { image: "mybase64photostring" },
+      card: new vCard().parse(`BEGIN:VCARD\r
+VERSION:3.0\r
+FN:Single Number\r
+N:Number;Single;;;\r
+END:VCARD\r
+`),
+    };
+
+    expect(contactHasNewPhoto(contact)).toBe(true);
+  });
+
+  it("returns false when the whatsapp profile doesn't have a photo", () => {
+    const contact = {
+      profile: { image: null },
+      card: new vCard().parse(`BEGIN:VCARD\r
+VERSION:3.0\r
+FN:Single Number\r
+N:Number;Single;;;\r
+PHOTO;ENCODING=BASE64;JPEG:/9j/4AAQSkZJRgetc\r
+END:VCARD\r
+`),
+    };
+
+    expect(contactHasNewPhoto(contact)).toBe(false);
+  });
+
+  it("returns true when the whatsapp profile photo and the contact photo don't match", () => {
+    const contact = {
+      profile: { image: "myphotostring1" },
+      card: new vCard().parse(`BEGIN:VCARD\r
+VERSION:3.0\r
+FN:Single Number\r
+N:Number;Single;;;\r
+PHOTO;ENCODING=BASE64;JPEG:myphotostring2\r
+END:VCARD\r
+`),
+    };
+
+    expect(contactHasNewPhoto(contact)).toBe(true);
+  });
+
+  it("returns false when the whatsapp profile photo and the contact photo match", () => {
+    const contact = {
+      profile: { photo: "myphotostring1" },
+      card: new vCard().parse(`BEGIN:VCARD\r
+VERSION:3.0\r
+FN:Single Number\r
+N:Number;Single;;;\r
+PHOTO;ENCODING=BASE64;JPEG:myphotostring1\r
+END:VCARD\r
+`),
+    };
+
+    expect(contactHasNewPhoto(contact)).toBe(false);
   });
 });

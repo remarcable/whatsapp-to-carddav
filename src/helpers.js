@@ -1,15 +1,13 @@
 import vCard from "vcf";
 
-const DEFAULT_COUNTRY_CALLING_CODE = "49";
-
-export function filterContactsWithNewPhoto(contact) {
+export function contactHasNewPhoto(contact) {
   const { card, profile } = contact;
-  if (!card.get) {
-    // XXX: cannot match vcard tel numbers with leading 0 to whatsapp profiles yet
-    console.log(card);
-  }
-  const cardPhoto = card.get("photo");
   const whatsAppPhoto = profile.image;
+  if (!whatsAppPhoto) {
+    return false;
+  }
+
+  const cardPhoto = card.get("photo")?.valueOf();
   return cardPhoto !== whatsAppPhoto;
 }
 
