@@ -4,7 +4,12 @@ Save WhatsApp profile pictures to your CardDav contact images (including Nextclo
 
 ## Getting started
 
-tbc.
+```sh
+npm i
+cp sample.env .env
+# add your own values to .env
+npm start
+```
 
 ## Motivation
 

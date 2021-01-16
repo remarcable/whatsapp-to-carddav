@@ -1,18 +1,52 @@
+import { config as dotenvConfig } from "dotenv";
+
+import vCard from "vcf";
 import connectToWhatsApp from "./src/connectToWhatsApp.js";
 import getContactsWithProfilePictures from "./src/getContactsWithProfilePictures.js";
+import connectToDAVServer from "./src/connectToDAVServer.js";
+import {
+  contactHasNewPhoto,
+  matchWhatsAppProfilesWithVCards,
+} from "./src/helpers.js";
+
+dotenvConfig();
+
+const server = process.env.SERVER;
+const credentials = {
+  username: process.env.USERNAME,
+  password: process.env.PASSWORD,
+};
 
 try {
-  const connection = await connectToWhatsApp();
-
+  const whatsAppConnection = await connectToWhatsApp();
   console.log("Connected to WhatsApp");
-  connection.on("contacts-received", async () => {
+
+  const cardDAVConnection = connectToDAVServer({ server, credentials }); // promise that is not awaited
+
+  whatsAppConnection.once("contacts-received", async () => {
     console.log("Received Contacts");
 
-    const contactsWithProfilePictures = (
-      await getContactsWithProfilePictures(connection)
+    const whatsAppContactsWithProfilePictures = (
+      await getContactsWithProfilePictures(whatsAppConnection)
     ).filter((c) => c.image !== null);
 
-    console.log(JSON.stringify(contactsWithProfilePictures[0], null, 4));
+    const cardDAVAccount = await cardDAVConnection;
+    const cardDAVContacts = cardDAVAccount.addressBooks[0].objects.map(
+      (contact) => new vCard().parse(contact.addressData)
+    );
+
+    const matches = matchWhatsAppProfilesWithVCards(
+      whatsAppContactsWithProfilePictures,
+      cardDAVContacts
+    );
+
+    global.matches = matches;
+    console.log("Has matches");
+
+    const filterMatches = matches.filter(contactHasNewPhoto);
+
+    global.filterMatches = filterMatches;
+    console.log("Has filtered matches");
   });
 } catch (error) {
   console.log("unexpected error:", error);

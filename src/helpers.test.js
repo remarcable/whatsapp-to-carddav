@@ -16,7 +16,7 @@ TEL;TYPE=CELL:+49 123 4567890\r
 END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
-    expect(getPhoneNumbersFromVCard(card)).toEqual(["+491234567890"]);
+    expect(getPhoneNumbersFromVCard(card)).toEqual(["491234567890"]);
   });
 
   it("returns multiple phone numbers from a vcard", () => {
@@ -32,7 +32,7 @@ END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
     expect(getPhoneNumbersFromVCard(card)).toEqual([
-      "+491234123456",
+      "491234123456",
       "01728022360",
     ]);
   });
@@ -48,6 +48,18 @@ END:VCARD\r
     const card = new vCard().parse(cardContent);
     expect(getPhoneNumbersFromVCard(card)).toEqual([]);
   });
+
+  it("can handle phone numbers in a weird format", () => {
+    const cardContent = `BEGIN:VCARD\r
+VERSION:3.0\r
+FN:Single Number\r
+N:Number;Single;;;\r
+TEL;TYPE=CELL:+49.179-1234567\r
+END:VCARD\r
+`;
+    const card = new vCard().parse(cardContent);
+    expect(getPhoneNumbersFromVCard(card)).toEqual(["491791234567"]);
+  });
 });
 
 describe("comparePhoneNumbers", () => {
@@ -56,7 +68,7 @@ describe("comparePhoneNumbers", () => {
       "returns true when the numbers match exactly",
       true,
       "4912345678",
-      "+4912345678",
+      "4912345678",
     ],
     [
       "returns true when the card number has a leading 00 but they otherwise match",
@@ -76,8 +88,8 @@ describe("comparePhoneNumbers", () => {
       "4912345678",
       "012345478",
     ],
-    ["can handle foreign numbers", true, "31512345678", "+31512345678"],
-    ["can handle foreign numbers 2", true, "112345678", "+112345678"],
+    ["can handle foreign numbers", true, "31512345678", "012345678"],
+    ["can handle foreign numbers 2", true, "112345678", "012345678"],
     ["can handle foreign numbers 3", true, "31512345678", "012345678"],
     [
       "returns false when the card number is undefined",
