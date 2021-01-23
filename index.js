@@ -103,7 +103,7 @@ const tasks = new Listr([
     },
   },
   {
-    title: "Sync update profile pictures to the server",
+    title: "Sync updated profile pictures to the server",
     task: async (context, task) => {
       const { client } = await davConnection;
       const promises = matchesWithUpdatedProfilePictures.map(({ card }) =>
@@ -113,7 +113,7 @@ const tasks = new Listr([
       let complete = 0;
       promises.map(async (p) => {
         await p;
-        task.title = `Sync updates profile pictures to the server – ${++complete}/${
+        task.title = `Sync updated profile pictures to the server – ${++complete}/${
           promises.length
         }`;
       });
