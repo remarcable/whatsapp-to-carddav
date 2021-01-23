@@ -4,8 +4,11 @@ import chunk from "lodash.chunk";
 const CHUNK_SIZE = 25;
 const INTERVAL_MS = 500;
 
-export default async function getContactsWithProfilePictures(contacts) {
-  console.log("Getting profile picture urls");
+export default async function getContactsWithProfilePictures(
+  contacts,
+  whatsAppConnection
+) {
+  const connection = await whatsAppConnection;
 
   return new Promise((resolve) => {
     let index = 0;
@@ -15,7 +18,7 @@ export default async function getContactsWithProfilePictures(contacts) {
     const intervalHandle = setInterval(async () => {
       if (chunks[index] === undefined) {
         clearInterval(intervalHandle);
-        return resolve(await Promise.all(result));
+        return resolve(result);
       }
 
       result = [

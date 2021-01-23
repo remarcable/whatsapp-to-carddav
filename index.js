@@ -1,5 +1,7 @@
 import { config as dotenvConfig } from "dotenv";
 
+import Listr from "listr";
+
 import connectToWhatsApp, {
   getWhatsAppContacts,
 } from "./src/connectToWhatsApp.js";
@@ -20,59 +22,107 @@ const credentials = {
   password: process.env.PASSWORD,
 };
 
-try {
-  const whatsAppConnection = await connectToWhatsApp();
-  console.log("Connected to WhatsApp");
+// this is working around Listr to be able to return a value
+// from one task to the next
+const whatsAppConnection = connectToWhatsApp();
+const davConnection = connectToDAVServer({ server, credentials });
+let whatsAppContacts = null;
+let whatsAppContactsWithProfilePictures = null;
+let matchesWithUpdatedProfilePictures = null;
 
-  const cardDAVConnection = connectToDAVServer({ server, credentials }); // promise that is not awaited
+const tasks = new Listr([
+  {
+    title: "Fetch ressources",
+    task: () => {
+      return new Listr(
+        [
+          {
+            title: "Connect to WhatsApp",
+            task: () => whatsAppConnection,
+          },
+          {
+            title: "Get WhatsApp contacts",
+            task: async () => {
+              const connection = await whatsAppConnection;
+              whatsAppContacts = await getWhatsAppContacts(connection);
+            },
+          },
+          {
+            title: "Connect to DAV Server",
+            task: () => davConnection,
+          },
+        ],
+        { concurrent: true }
+      );
+    },
+  },
+  {
+    title: "Get profile pictures of WhatsApp contacts",
+    task: async (context, task) => {
+      const promises = await getContactsWithProfilePictures(
+        whatsAppContacts,
+        whatsAppConnection
+      );
 
-  const whatsAppContacts = await getWhatsAppContacts(whatsAppConnection);
-  console.log("Received Contacts");
-
-  const whatsAppContactsWithProfilePictures = (
-    await getContactsWithProfilePictures(whatsAppContacts)
-  ).filter((c) => c.image !== null);
-
-  const {
-    account: cardDAVAccount,
-    client: cardDAVClient,
-  } = await cardDAVConnection;
-  const cardDAVContacts = cardDAVAccount.addressBooks[0].objects;
-
-  const matches = matchWhatsAppProfilesWithVCards(
-    whatsAppContactsWithProfilePictures,
-    cardDAVContacts
-  );
-
-  global.matches = matches;
-  console.log("Has matches");
-
-  const filteredMatches = matches.filter(contactHasNewPhoto);
-  console.log("Has filtered matches");
-
-  const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
-    const { card, profile } = match;
-    card.addressData = updateImageInVCardString(
-      card.addressData,
-      profile.image
-    );
-    return card;
-  });
-
-  // sync cards to server
-  const updates = Promise.all(
-    matchesWithUpdatedProfilePictures.map((davVCard, i) => {
-      const promise = updateCardOnServer({
-        client: cardDAVClient,
-        card: davVCard,
+      let completed = 0;
+      promises.map(async (p) => {
+        await p;
+        task.title = `Get profile pictures of WhatsApp contacts – ${++completed}/${
+          promises.length
+        }`;
       });
-      promise.then(() => console.log("Updated", i));
-      return promise;
-    })
-  );
 
-  await updates;
-  console.log("Done");
-} catch (error) {
-  console.log("unexpected error:", error);
-}
+      whatsAppContactsWithProfilePictures = (
+        await Promise.all(promises)
+      ).filter((c) => c.image !== null);
+    },
+  },
+  {
+    title: "Match WhatsApp profiles to contacts",
+    task: async (context, task) => {
+      const { account: cardDAVAccount } = await davConnection;
+
+      const cardDAVContacts = cardDAVAccount.addressBooks[0].objects;
+
+      const matches = matchWhatsAppProfilesWithVCards(
+        whatsAppContactsWithProfilePictures,
+        cardDAVContacts
+      );
+      const filteredMatches = matches.filter(contactHasNewPhoto);
+
+      task.title = `Match WhatsApp profiles to contacts – ${filteredMatches.length} contacts with updated photo`;
+
+      matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
+        const { card, profile } = match;
+        card.addressData = updateImageInVCardString(
+          card.addressData,
+          profile.image
+        );
+        return { card, profile };
+      });
+    },
+  },
+  {
+    title: "Sync update profile pictures to the server",
+    task: async (context, task) => {
+      const { client } = await davConnection;
+      const promises = matchesWithUpdatedProfilePictures.map(({ card }) =>
+        updateCardOnServer({ client, card })
+      );
+
+      let complete = 0;
+      promises.map(async (p) => {
+        await p;
+        task.title = `Sync updates profile pictures to the server – ${++complete}/${
+          promises.length
+        }`;
+      });
+
+      return Promise.all(promises);
+    },
+  },
+]);
+
+tasks.run().catch((err) => {
+  console.error(err);
+});
