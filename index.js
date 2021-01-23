@@ -1,13 +1,14 @@
 import { config as dotenvConfig } from "dotenv";
 
-import vCard from "vcf";
 import connectToWhatsApp from "./src/connectToWhatsApp.js";
 import getContactsWithProfilePictures from "./src/getContactsWithProfilePictures.js";
 import connectToDAVServer from "./src/connectToDAVServer.js";
 import {
   contactHasNewPhoto,
   matchWhatsAppProfilesWithVCards,
+  updateImageInVCardString,
 } from "./src/helpers.js";
+import updateCardOnServer from "./src/updateCard.js";
 
 dotenvConfig();
 
@@ -30,10 +31,11 @@ try {
       await getContactsWithProfilePictures(whatsAppConnection)
     ).filter((c) => c.image !== null);
 
-    const cardDAVAccount = await cardDAVConnection;
-    const cardDAVContacts = cardDAVAccount.addressBooks[0].objects.map(
-      (contact) => new vCard().parse(contact.addressData)
-    );
+    const {
+      account: cardDAVAccount,
+      client: cardDAVClient,
+    } = await cardDAVConnection;
+    const cardDAVContacts = cardDAVAccount.addressBooks[0].objects;
 
     const matches = matchWhatsAppProfilesWithVCards(
       whatsAppContactsWithProfilePictures,
@@ -43,10 +45,32 @@ try {
     global.matches = matches;
     console.log("Has matches");
 
-    const filterMatches = matches.filter(contactHasNewPhoto);
-
-    global.filterMatches = filterMatches;
+    const filteredMatches = matches.filter(contactHasNewPhoto);
     console.log("Has filtered matches");
+
+    const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
+      const { card, profile } = match;
+      card.addressData = updateImageInVCardString(
+        card.addressData,
+        profile.image
+      );
+      return card;
+    });
+
+    // sync cards to server
+    const updates = Promise.all(
+      matchesWithUpdatedProfilePictures.map((davVCard, i) => {
+        const promise = updateCardOnServer({
+          client: cardDAVClient,
+          card: davVCard,
+        });
+        promise.then(() => console.log("Updated", i));
+        return promise;
+      })
+    );
+
+    await updates;
+    console.log("Done");
   });
 } catch (error) {
   console.log("unexpected error:", error);

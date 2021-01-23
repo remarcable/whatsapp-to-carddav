@@ -24,8 +24,8 @@ export function matchWhatsAppProfilesWithVCards(whatsAppProfiles, davVCards) {
   const vCardsWithWhatsAppProfile = whatsAppProfiles.map((profile) => {
     const { jid } = profile;
     const whatsAppNumber = jid.split("@")[0];
-    const vCard = davVCards.find((davVCards) => {
-      const cardNumbers = getPhoneNumbersFromVCardString(davVCards.addressData);
+    const vCard = davVCards.find((davVCard) => {
+      const cardNumbers = getPhoneNumbersFromVCardString(davVCard.addressData);
       return cardNumbers.some((cardNumber) =>
         comparePhoneNumbers(whatsAppNumber, cardNumber)
       );

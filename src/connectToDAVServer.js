@@ -9,5 +9,5 @@ export default async function connectToDAVServer({ server, credentials }) {
     loadObjects: true,
   });
 
-  return account;
+  return { account, client };
 }
