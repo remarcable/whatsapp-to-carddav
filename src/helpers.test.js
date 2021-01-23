@@ -1,12 +1,12 @@
 import vCard from "vcf";
 import {
-  getPhoneNumbersFromVCard,
+  getPhoneNumbersFromVCardString,
   comparePhoneNumbers,
   matchWhatsAppProfilesWithVCards,
   contactHasNewPhoto,
 } from "./helpers";
 
-describe("getPhoneNumbersFromVCard", () => {
+describe("getPhoneNumbersFromVCardString", () => {
   it("returns a phone number in an array from a vcard", () => {
     const cardContent = `BEGIN:VCARD\r
 VERSION:3.0\r
@@ -16,7 +16,7 @@ TEL;TYPE=CELL:+49 123 4567890\r
 END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
-    expect(getPhoneNumbersFromVCard(card)).toEqual(["491234567890"]);
+    expect(getPhoneNumbersFromVCardString(card)).toEqual(["491234567890"]);
   });
 
   it("returns multiple phone numbers from a vcard", () => {
@@ -31,7 +31,7 @@ UID:3eb9c209-8ba8-4b2b-b475-537c69d5d8ac\r
 END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
-    expect(getPhoneNumbersFromVCard(card)).toEqual([
+    expect(getPhoneNumbersFromVCardString(card)).toEqual([
       "491234123456",
       "01728022360",
     ]);
@@ -46,7 +46,7 @@ UID:3eb9d202-8ba8-4b1a-b475-537d69d5d8ac\r
 END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
-    expect(getPhoneNumbersFromVCard(card)).toEqual([]);
+    expect(getPhoneNumbersFromVCardString(card)).toEqual([]);
   });
 
   it("can handle phone numbers in a weird format", () => {
@@ -58,7 +58,7 @@ TEL;TYPE=CELL:+49.179-1234567\r
 END:VCARD\r
 `;
     const card = new vCard().parse(cardContent);
-    expect(getPhoneNumbersFromVCard(card)).toEqual(["491791234567"]);
+    expect(getPhoneNumbersFromVCardString(card)).toEqual(["491791234567"]);
   });
 });
 
@@ -108,14 +108,15 @@ describe("comparePhoneNumbers", () => {
 // because the whatsapp profiles are in my contacts there will always be a
 // contact that matches them
 describe("matchWhatsAppProfilesWithVCards", () => {
-  const numberToVCard = (phoneNumber) =>
-    new vCard().parse(`BEGIN:VCARD\r
+  const numberToVCard = (phoneNumber) => ({
+    addressData: `BEGIN:VCARD\r
 VERSION:3.0\r
 FN:Single Number\r
 N:Number;Single;;;\r
 TEL;TYPE=CELL:${phoneNumber}\r
 END:VCARD\r
-`);
+`,
+  });
 
   const expected = [
     {
@@ -150,12 +151,12 @@ describe("contactHasNewPhoto", () => {
   it("returns true when the contact doesn't have a photo yet", () => {
     const contact = {
       profile: { image: "mybase64photostring" },
-      card: new vCard().parse(`BEGIN:VCARD\r
+      card: `BEGIN:VCARD\r
 VERSION:3.0\r
 FN:Single Number\r
 N:Number;Single;;;\r
 END:VCARD\r
-`),
+`,
     };
 
     expect(contactHasNewPhoto(contact)).toBe(true);
@@ -164,13 +165,13 @@ END:VCARD\r
   it("returns false when the whatsapp profile doesn't have a photo", () => {
     const contact = {
       profile: { image: null },
-      card: new vCard().parse(`BEGIN:VCARD\r
+      card: `BEGIN:VCARD\r
 VERSION:3.0\r
 FN:Single Number\r
 N:Number;Single;;;\r
 PHOTO;ENCODING=BASE64;JPEG:/9j/4AAQSkZJRgetc\r
 END:VCARD\r
-`),
+`,
     };
 
     expect(contactHasNewPhoto(contact)).toBe(false);
@@ -179,13 +180,13 @@ END:VCARD\r
   it("returns true when the whatsapp profile photo and the contact photo don't match", () => {
     const contact = {
       profile: { image: "myphotostring1" },
-      card: new vCard().parse(`BEGIN:VCARD\r
+      card: `BEGIN:VCARD\r
 VERSION:3.0\r
 FN:Single Number\r
 N:Number;Single;;;\r
 PHOTO;ENCODING=BASE64;JPEG:myphotostring2\r
 END:VCARD\r
-`),
+`,
     };
 
     expect(contactHasNewPhoto(contact)).toBe(true);
@@ -194,13 +195,13 @@ END:VCARD\r
   it("returns false when the whatsapp profile photo and the contact photo match", () => {
     const contact = {
       profile: { photo: "myphotostring1" },
-      card: new vCard().parse(`BEGIN:VCARD\r
+      card: `BEGIN:VCARD\r
 VERSION:3.0\r
 FN:Single Number\r
 N:Number;Single;;;\r
 PHOTO;ENCODING=BASE64;JPEG:myphotostring1\r
 END:VCARD\r
-`),
+`,
     };
 
     expect(contactHasNewPhoto(contact)).toBe(false);

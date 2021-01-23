@@ -1,9 +1,9 @@
 import vCard from "vcf";
 
 export function contactHasNewPhoto(contact) {
-  const { card, profile } = contact;
+  const { card: cardString, profile } = contact;
 
-  if (!card) {
+  if (!cardString) {
     console.log(
       `ERROR: Was not able to match profile of ${profile.jid} to a card`
     );
@@ -16,16 +16,16 @@ export function contactHasNewPhoto(contact) {
     return false;
   }
 
-  const cardPhoto = card.get("photo")?.valueOf();
+  const cardPhoto = new vCard().parse(cardString).get("photo")?.valueOf();
   return cardPhoto !== whatsAppPhoto;
 }
 
-export function matchWhatsAppProfilesWithVCards(whatsAppProfiles, vCards) {
+export function matchWhatsAppProfilesWithVCards(whatsAppProfiles, davVCards) {
   const vCardsWithWhatsAppProfile = whatsAppProfiles.map((profile) => {
     const { jid } = profile;
     const whatsAppNumber = jid.split("@")[0];
-    const vCard = vCards.find((card) => {
-      const cardNumbers = getPhoneNumbersFromVCard(card);
+    const vCard = davVCards.find((davVCards) => {
+      const cardNumbers = getPhoneNumbersFromVCardString(davVCards.addressData);
       return cardNumbers.some((cardNumber) =>
         comparePhoneNumbers(whatsAppNumber, cardNumber)
       );
@@ -37,8 +37,8 @@ export function matchWhatsAppProfilesWithVCards(whatsAppProfiles, vCards) {
   return vCardsWithWhatsAppProfile;
 }
 
-export function getPhoneNumbersFromVCard(card) {
-  const tel = card.get("tel");
+export function getPhoneNumbersFromVCardString(cardString) {
+  const tel = new vCard().parse(cardString).get("tel");
 
   if (!tel) {
     return [];
@@ -67,9 +67,9 @@ export function comparePhoneNumbers(whatsAppNumber, cardNumber) {
   return whatsAppNumber === cardNumber;
 }
 
-export function updateImageInVCardString(card, base64Image) {
+export function updateImageInVCardString(cardString, base64Image) {
   return new vCard()
-    .parse(card)
+    .parse(cardString)
     .set("photo", base64Image, { encoding: "BASE64", type: "jpeg" })
     .toString();
 }
