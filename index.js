@@ -123,6 +123,11 @@ const tasks = new Listr([
   },
 ]);
 
-tasks.run().catch((err) => {
-  console.error(err);
-});
+tasks
+  .run()
+  .then(() => {
+    process.exit(-1);
+  })
+  .catch((err) => {
+    console.error(err);
+  });
