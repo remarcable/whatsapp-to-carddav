@@ -1,9 +1,9 @@
 import vCard from "vcf";
 
 export function contactHasNewPhoto(contact) {
-  const { card: cardString, profile } = contact;
+  const { card, profile } = contact;
 
-  if (!cardString) {
+  if (!card) {
     console.log(
       `ERROR: Was not able to match profile of ${profile.jid} to a card`
     );
@@ -16,7 +16,7 @@ export function contactHasNewPhoto(contact) {
     return false;
   }
 
-  const cardPhoto = new vCard().parse(cardString).get("photo")?.valueOf();
+  const cardPhoto = new vCard().parse(card.addressData).get("photo")?.valueOf();
   return cardPhoto !== whatsAppPhoto;
 }
 
