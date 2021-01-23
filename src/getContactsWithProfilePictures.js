@@ -1,5 +1,4 @@
 import fetch from "node-fetch";
-import chunk from "lodash.chunk";
 
 export default async function getContactsWithProfilePictures(
   contacts,
