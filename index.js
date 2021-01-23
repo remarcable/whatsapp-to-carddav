@@ -1,6 +1,8 @@
 import { config as dotenvConfig } from "dotenv";
 
-import connectToWhatsApp from "./src/connectToWhatsApp.js";
+import connectToWhatsApp, {
+  getWhatsAppContacts,
+} from "./src/connectToWhatsApp.js";
 import getContactsWithProfilePictures from "./src/getContactsWithProfilePictures.js";
 import connectToDAVServer from "./src/connectToDAVServer.js";
 import {
@@ -24,54 +26,53 @@ try {
 
   const cardDAVConnection = connectToDAVServer({ server, credentials }); // promise that is not awaited
 
-  whatsAppConnection.once("contacts-received", async () => {
-    console.log("Received Contacts");
+  const whatsAppContacts = await getWhatsAppContacts(whatsAppConnection);
+  console.log("Received Contacts");
 
-    const whatsAppContactsWithProfilePictures = (
-      await getContactsWithProfilePictures(whatsAppConnection)
-    ).filter((c) => c.image !== null);
+  const whatsAppContactsWithProfilePictures = (
+    await getContactsWithProfilePictures(whatsAppContacts)
+  ).filter((c) => c.image !== null);
 
-    const {
-      account: cardDAVAccount,
-      client: cardDAVClient,
-    } = await cardDAVConnection;
-    const cardDAVContacts = cardDAVAccount.addressBooks[0].objects;
+  const {
+    account: cardDAVAccount,
+    client: cardDAVClient,
+  } = await cardDAVConnection;
+  const cardDAVContacts = cardDAVAccount.addressBooks[0].objects;
 
-    const matches = matchWhatsAppProfilesWithVCards(
-      whatsAppContactsWithProfilePictures,
-      cardDAVContacts
+  const matches = matchWhatsAppProfilesWithVCards(
+    whatsAppContactsWithProfilePictures,
+    cardDAVContacts
+  );
+
+  global.matches = matches;
+  console.log("Has matches");
+
+  const filteredMatches = matches.filter(contactHasNewPhoto);
+  console.log("Has filtered matches");
+
+  const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
+    const { card, profile } = match;
+    card.addressData = updateImageInVCardString(
+      card.addressData,
+      profile.image
     );
-
-    global.matches = matches;
-    console.log("Has matches");
-
-    const filteredMatches = matches.filter(contactHasNewPhoto);
-    console.log("Has filtered matches");
-
-    const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
-      const { card, profile } = match;
-      card.addressData = updateImageInVCardString(
-        card.addressData,
-        profile.image
-      );
-      return card;
-    });
-
-    // sync cards to server
-    const updates = Promise.all(
-      matchesWithUpdatedProfilePictures.map((davVCard, i) => {
-        const promise = updateCardOnServer({
-          client: cardDAVClient,
-          card: davVCard,
-        });
-        promise.then(() => console.log("Updated", i));
-        return promise;
-      })
-    );
-
-    await updates;
-    console.log("Done");
+    return card;
   });
+
+  // sync cards to server
+  const updates = Promise.all(
+    matchesWithUpdatedProfilePictures.map((davVCard, i) => {
+      const promise = updateCardOnServer({
+        client: cardDAVClient,
+        card: davVCard,
+      });
+      promise.then(() => console.log("Updated", i));
+      return promise;
+    })
+  );
+
+  await updates;
+  console.log("Done");
 } catch (error) {
   console.log("unexpected error:", error);
 }

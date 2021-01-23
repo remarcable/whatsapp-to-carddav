@@ -20,3 +20,15 @@ export default async function connectToWhatsApp() {
 
   return connection;
 }
+
+export function getWhatsAppContacts(connection) {
+  return new Promise((resolve, reject) => {
+    whatsAppConnection.once("contacts-received", () => {
+      const contacts = Object.values(connection.contacts).filter(
+        (c) => !!c.name && !!c.index
+      );
+
+      resolve(contacts);
+    });
+  });
+}

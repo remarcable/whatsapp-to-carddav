@@ -4,14 +4,10 @@ import chunk from "lodash.chunk";
 const CHUNK_SIZE = 25;
 const INTERVAL_MS = 500;
 
-export default async function getContactsWithProfilePictures(connection) {
+export default async function getContactsWithProfilePictures(contacts) {
   console.log("Getting profile picture urls");
 
   return new Promise((resolve) => {
-    const contacts = Object.values(connection.contacts).filter(
-      (c) => !!c.name && !!c.index
-    );
-
     let index = 0;
     let result = [];
     const chunks = chunk(contacts, CHUNK_SIZE);
