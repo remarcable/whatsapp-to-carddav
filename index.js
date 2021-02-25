@@ -1,6 +1,7 @@
 import { config as dotenvConfig } from "dotenv";
 
-import Listr from "listr";
+import { Listr } from "listr2";
+import QRCode from "qrcode-terminal";
 
 import connectToWhatsApp, {
   getWhatsAppContacts,
@@ -22,39 +23,46 @@ const credentials = {
   password: process.env.PASSWORD,
 };
 
+const davConnection = connectToDAVServer({ server, credentials });
+
 // this is working around Listr to be able to return a value
 // from one task to the next
-const whatsAppConnection = connectToWhatsApp();
-const davConnection = connectToDAVServer({ server, credentials });
+
+let whatsAppConnection = null;
 let whatsAppContacts = null;
 let whatsAppContactsWithProfilePictures = null;
 let matchesWithUpdatedProfilePictures = null;
 
+const fetchRessourcesTasks = [
+  {
+    title: "Connect to WhatsApp",
+    task: async (_, task) => {
+      whatsAppConnection = connectToWhatsApp((code) => {
+        QRCode.generate(code, { small: true }, (qrCode) => {
+          task.output = qrCode;
+        });
+      });
+
+      await whatsAppConnection;
+    },
+  },
+  {
+    title: "Get WhatsApp contacts",
+    task: async () => {
+      const connection = await whatsAppConnection;
+      whatsAppContacts = await getWhatsAppContacts(connection);
+    },
+  },
+  {
+    title: "Connect to DAV Server",
+    task: () => davConnection,
+  },
+];
+
 const tasks = new Listr([
   {
     title: "Fetch ressources",
-    task: () => {
-      return new Listr(
-        [
-          {
-            title: "Connect to WhatsApp",
-            task: () => whatsAppConnection,
-          },
-          {
-            title: "Get WhatsApp contacts",
-            task: async () => {
-              const connection = await whatsAppConnection;
-              whatsAppContacts = await getWhatsAppContacts(connection);
-            },
-          },
-          {
-            title: "Connect to DAV Server",
-            task: () => davConnection,
-          },
-        ],
-        { concurrent: true }
-      );
-    },
+    task: () => new Listr(fetchRessourcesTasks, { concurrent: true }),
   },
   {
     title: "Get profile pictures of WhatsApp contacts",
@@ -67,9 +75,7 @@ const tasks = new Listr([
       let completed = 0;
       promises.map(async (p) => {
         await p;
-        task.title = `Get profile pictures of WhatsApp contacts – ${++completed}/${
-          promises.length
-        }`;
+        task.output = `Completed ${++completed}/${promises.length}`;
       });
 
       whatsAppContactsWithProfilePictures = (
@@ -110,12 +116,10 @@ const tasks = new Listr([
         updateCardOnServer({ client, card })
       );
 
-      let complete = 0;
+      let completed = 0;
       promises.map(async (p) => {
         await p;
-        task.title = `Sync updated profile pictures to the server – ${++complete}/${
-          promises.length
-        }`;
+        task.output = `Completed ${++completed}/${promises.length}`;
       });
 
       return Promise.all(promises);

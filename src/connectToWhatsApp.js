@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { WAConnection } from "@adiwajshing/baileys";
 
 const AUTH_INFO_FILE_URL = ".auth_info"; // path is relative to index.js
-export default async function connectToWhatsApp() {
+export default async function connectToWhatsApp(printQRCode) {
   const connection = new WAConnection();
   connection.logger.level = "error";
   connection.setMaxListeners(50);
@@ -10,6 +10,9 @@ export default async function connectToWhatsApp() {
   if (fs.existsSync(AUTH_INFO_FILE_URL)) {
     connection.loadAuthInfo(AUTH_INFO_FILE_URL);
   }
+
+  connection.removeAllListeners("qr");
+  connection.on("qr", printQRCode);
 
   connection.on("credentials-updated", () => {
     const authInfo = connection.base64EncodedAuthInfo();
