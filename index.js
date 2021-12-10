@@ -30,8 +30,10 @@ try {
   console.log("Received Contacts");
 
   const whatsAppContactsWithProfilePictures = (
-    await getContactsWithProfilePictures(whatsAppContacts)
+    await getContactsWithProfilePictures(whatsAppContacts, whatsAppConnection)
   ).filter((c) => c.image !== null);
+
+  whatsAppConnection.end();
 
   const {
     account: cardDAVAccount,
@@ -48,7 +50,10 @@ try {
   console.log("Has matches");
 
   const filteredMatches = matches.filter(contactHasNewPhoto);
-  console.log("Has filtered matches");
+  console.log(
+    "Has filtered matches",
+    filteredMatches.map(({ profile: { notify, id } }) => `${notify}-${id}`)
+  );
 
   const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {
     const { card, profile } = match;
@@ -62,11 +67,18 @@ try {
   // sync cards to server
   const updates = Promise.all(
     matchesWithUpdatedProfilePictures.map((davVCard, i) => {
+      console.log("Try updating", i);
       const promise = updateCardOnServer({
         client: cardDAVClient,
         card: davVCard,
       });
-      promise.then(() => console.log("Updated", i));
+      promise
+        .then(() => {
+          console.log("updated");
+        })
+        .catch((error) =>
+          console.log("there was an error updating", davVCard, error)
+        );
       return promise;
     })
   );

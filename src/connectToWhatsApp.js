@@ -1,34 +1,98 @@
+import defaultMakeWASocket, {
+  useSingleFileAuthState,
+  DisconnectReason,
+} from "@adiwajshing/baileys-md";
 import * as fs from "fs";
-import { WAConnection } from "@adiwajshing/baileys";
 
-const AUTH_INFO_FILE_URL = ".auth_info"; // path is relative to index.js
+const { state, saveState } = useSingleFileAuthState("./auth_info_multi.json");
+
+const makeWASocket = defaultMakeWASocket.default;
+
+// start a connection
 export default async function connectToWhatsApp() {
-  const connection = new WAConnection();
-  connection.logger.level = "error";
-  connection.setMaxListeners(50);
-
-  if (fs.existsSync(AUTH_INFO_FILE_URL)) {
-    connection.loadAuthInfo(AUTH_INFO_FILE_URL);
-  }
-
-  connection.on("credentials-updated", () => {
-    const authInfo = connection.base64EncodedAuthInfo();
-    fs.writeFileSync(AUTH_INFO_FILE_URL, JSON.stringify(authInfo, null, "\t"));
+  let sock = makeWASocket({
+    printQRInTerminal: true,
+    auth: state,
   });
 
-  await connection.connect();
+  sock.ev.on("connection.update", (update) => {
+    const { connection, lastDisconnect } = update;
+    // if (connection === "close") {
+    //   // reconnect if not logged out
+    //   if (
+    //     lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
+    //   ) {
+    //     sock = connectToWhatsApp();
+    //   } else {
+    //     console.log("connection closed");
+    //   }
+    // }
+  });
 
-  return connection;
+  sock.ev.on("creds.update", saveState);
+
+  getWhatsAppContacts(sock);
+
+  return sock;
 }
 
+const WHATSAPP_CONTACTS_URL = "whatsapp_contacts.json";
 export function getWhatsAppContacts(connection) {
   return new Promise((resolve, reject) => {
-    whatsAppConnection.once("contacts-received", () => {
-      const contacts = Object.values(connection.contacts).filter(
-        (c) => !!c.name && !!c.index
+    connection.ev.on("contacts.upsert", (contacts) => {
+      console.log("contacts.upsert", contacts);
+      if (!fs.existsSync(WHATSAPP_CONTACTS_URL)) {
+        fs.writeFileSync(WHATSAPP_CONTACTS_URL, JSON.stringify([], null, "\t"));
+      }
+
+      const state = JSON.parse(
+        fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
+      );
+      const newState = [...state, ...contacts];
+      fs.writeFileSync(
+        WHATSAPP_CONTACTS_URL,
+        JSON.stringify(newState, null, "\t")
+      );
+    });
+
+    connection.ev.on("contacts.update", (contacts) => {
+      console.log("contacts.update", contacts);
+      let state = JSON.parse(fs.readFileSync(WHATSAPP_CONTACTS_URL).toString());
+
+      contacts.forEach((contact) => {
+        const currentContactIndex = state.findIndex((c) => c.id === contact.id);
+
+        if (currentContactIndex === -1) {
+          return;
+        }
+
+        const newState = [
+          ...state.slice(0, currentContactIndex),
+          {
+            ...state[currentContactIndex],
+            ...contact,
+          },
+          ...state.slice(currentContactIndex + 1),
+        ];
+
+        state = newState;
+      });
+
+      fs.writeFileSync(
+        WHATSAPP_CONTACTS_URL,
+        JSON.stringify(state, null, "\t")
       );
 
-      resolve(contacts);
+      // heuristic to get a relatively up-to-date version of
+      // our contacts. Also resolve after a timeout
+      resolve(state);
     });
+
+    setTimeout(() => {
+      const state = JSON.parse(
+        fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
+      );
+      resolve(state);
+    }, 2 * 1000);
   });
 }

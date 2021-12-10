@@ -5,7 +5,7 @@ export function contactHasNewPhoto(contact) {
 
   if (!card) {
     console.log(
-      `ERROR: Was not able to match profile of ${profile.jid} to a card`
+      `ERROR: Was not able to match profile of ${profile.id} to a card`
     );
 
     return false;
@@ -22,8 +22,8 @@ export function contactHasNewPhoto(contact) {
 
 export function matchWhatsAppProfilesWithVCards(whatsAppProfiles, davVCards) {
   const vCardsWithWhatsAppProfile = whatsAppProfiles.map((profile) => {
-    const { jid } = profile;
-    const whatsAppNumber = jid.split("@")[0];
+    const { id } = profile;
+    const whatsAppNumber = id.split("@")[0];
     const vCard = davVCards.find((davVCard) => {
       const cardNumbers = getPhoneNumbersFromVCardString(davVCard.addressData);
       return cardNumbers.some((cardNumber) =>

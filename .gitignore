@@ -1,3 +1,5 @@
 node_modules
 .auth_info
+auth_info_multi.json
+whatsapp_contacts.json
 .env
