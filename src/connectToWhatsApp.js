@@ -10,23 +10,9 @@ const makeWASocket = defaultMakeWASocket.default;
 
 // start a connection
 export default async function connectToWhatsApp() {
-  let sock = makeWASocket({
+  const sock = makeWASocket({
     printQRInTerminal: true,
     auth: state,
-  });
-
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect } = update;
-    // if (connection === "close") {
-    //   // reconnect if not logged out
-    //   if (
-    //     lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
-    //   ) {
-    //     sock = connectToWhatsApp();
-    //   } else {
-    //     console.log("connection closed");
-    //   }
-    // }
   });
 
   sock.ev.on("creds.update", saveState);
@@ -38,12 +24,13 @@ export default async function connectToWhatsApp() {
 
 const WHATSAPP_CONTACTS_URL = "whatsapp_contacts.json";
 export function getWhatsAppContacts(connection) {
-  return new Promise((resolve, reject) => {
+  if (!fs.existsSync(WHATSAPP_CONTACTS_URL)) {
+    fs.writeFileSync(WHATSAPP_CONTACTS_URL, JSON.stringify([], null, "\t"));
+  }
+
+  return new Promise((resolve) => {
     connection.ev.on("contacts.upsert", (contacts) => {
       console.log("contacts.upsert", contacts);
-      if (!fs.existsSync(WHATSAPP_CONTACTS_URL)) {
-        fs.writeFileSync(WHATSAPP_CONTACTS_URL, JSON.stringify([], null, "\t"));
-      }
 
       const state = JSON.parse(
         fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
@@ -84,7 +71,7 @@ export function getWhatsAppContacts(connection) {
       );
 
       // heuristic to get a relatively up-to-date version of
-      // our contacts. Also resolve after a timeout
+      // our contacts. Also resolve after a timeout.
       resolve(state);
     });
 
@@ -93,6 +80,6 @@ export function getWhatsAppContacts(connection) {
         fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
       );
       resolve(state);
-    }, 2 * 1000);
+    }, 10 * 1000);
   });
 }
