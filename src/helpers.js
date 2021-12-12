@@ -4,9 +4,9 @@ export function contactHasNewPhoto(contact) {
   const { card, profile } = contact;
 
   if (!card) {
-    console.log(
-      `ERROR: Was not able to match profile of ${profile.id} to a card`
-    );
+    // console.log(
+    //   `ERROR: Was not able to match profile of ${profile.id} to a card`
+    // );
 
     return false;
   }

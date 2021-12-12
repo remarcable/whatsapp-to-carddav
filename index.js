@@ -33,6 +33,8 @@ try {
     await getContactsWithProfilePictures(whatsAppContacts, whatsAppConnection)
   ).filter((c) => c.image !== null);
 
+  console.log("Received Profile Pictures");
+
   whatsAppConnection.end();
 
   const {

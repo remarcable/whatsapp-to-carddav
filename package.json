@@ -23,6 +23,7 @@
     "dotenv": "^8.2.0",
     "lodash.chunk": "^4.2.0",
     "node-fetch": "^2.6.1",
+    "unique-by": "^1.0.0",
     "vcf": "^2.1.0"
   },
   "devDependencies": {
