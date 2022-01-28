@@ -103,7 +103,7 @@ describe("comparePhoneNumbers", () => {
   });
 });
 
-// to match profiles they at least need a jid
+// to match profiles they at least need a id
 // the part before the @ is equivalent to the phone number
 // because the whatsapp profiles are in my contacts there will always be a
 // contact that matches them
@@ -120,19 +120,19 @@ END:VCARD\r
 
   const expected = [
     {
-      profile: { jid: "491234567890@something.com" },
+      profile: { id: "491234567890@something.com" },
       card: numberToVCard("+491234567890"),
     },
     {
-      profile: { jid: "491234567891@something.com" },
+      profile: { id: "491234567891@something.com" },
       card: numberToVCard("+491234567891"),
     },
     {
-      profile: { jid: "491234567892@something.com" },
+      profile: { id: "491234567892@something.com" },
       card: numberToVCard("01234567892"),
     },
     {
-      profile: { jid: "411234567893@something.com" },
+      profile: { id: "411234567893@something.com" },
       card: numberToVCard("00411234567893"),
     },
   ];
