@@ -49,7 +49,7 @@ try {
   const filteredMatches = matches.filter(contactHasNewPhoto);
   console.log(
     "Has filtered matches",
-    filteredMatches.map(({ profile: { notify, id } }) => `${notify}-${id}`)
+    filteredMatches.map(({ profile: { name, id } }) => `${name}-${id}`)
   );
 
   const matchesWithUpdatedProfilePictures = filteredMatches.map((match) => {

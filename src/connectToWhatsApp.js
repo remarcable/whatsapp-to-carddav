@@ -75,6 +75,6 @@ export function getWhatsAppContacts(connection) {
         fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
       );
       resolve(state);
-    }, 10 * 1000);
+    }, 30 * 1000);
   });
 }
