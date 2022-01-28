@@ -1,7 +1,6 @@
 import defaultMakeWASocket, {
   useSingleFileAuthState,
-  DisconnectReason,
-} from "@adiwajshing/baileys-md";
+} from "@adiwajshing/baileys";
 import * as fs from "fs";
 import uniqueBy from "unique-by";
 
@@ -31,8 +30,6 @@ export function getWhatsAppContacts(connection) {
 
   return new Promise((resolve) => {
     connection.ev.on("contacts.upsert", (contacts) => {
-      console.log("contacts.upsert", contacts);
-
       const state = JSON.parse(
         fs.readFileSync(WHATSAPP_CONTACTS_URL).toString()
       );
@@ -71,10 +68,6 @@ export function getWhatsAppContacts(connection) {
         WHATSAPP_CONTACTS_URL,
         JSON.stringify(state, null, "\t")
       );
-
-      // heuristic to get a relatively up-to-date version of
-      // our contacts. Also resolve after a timeout.
-      // resolve(state);
     });
 
     setTimeout(() => {
