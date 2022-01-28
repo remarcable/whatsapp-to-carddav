@@ -13,8 +13,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node ./index.js",
-    "development": "nodemon ./index.js",
+    "start": "node -r dotenv/config src/index.js",
+    "development": "nodemon -r dotenv/config src/index.js",
     "test": "jest"
   },
   "dependencies": {

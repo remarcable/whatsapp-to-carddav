@@ -1,30 +1,26 @@
-import { config as dotenvConfig } from "dotenv";
-
-import connectToWhatsApp, {
-  getWhatsAppContacts,
-} from "./src/connectToWhatsApp.js";
-import getContactsWithProfilePictures from "./src/getContactsWithProfilePictures.js";
-import connectToDAVServer from "./src/connectToDAVServer.js";
+import connectToWhatsApp, { getWhatsAppContacts } from "./connectToWhatsApp.js";
+import getContactsWithProfilePictures from "./getContactsWithProfilePictures.js";
+import connectToDAVServer from "./connectToDAVServer.js";
 import {
   contactHasNewPhoto,
   matchWhatsAppProfilesWithVCards,
   updateImageInVCardString,
-} from "./src/helpers.js";
-import updateCardOnServer from "./src/updateCard.js";
-
-dotenvConfig();
-
-const server = process.env.SERVER;
-const credentials = {
-  username: process.env.USERNAME,
-  password: process.env.PASSWORD,
-};
+} from "./helpers.js";
+import updateCardOnServer from "./updateCard.js";
 
 try {
   const whatsAppConnection = await connectToWhatsApp();
   console.log("Connected to WhatsApp");
 
-  const cardDAVConnection = connectToDAVServer({ server, credentials }); // promise that is not awaited
+  // promise is not awaited to parallelize getting whatsapp contacts with syncing
+  // DAV contacts
+  const cardDAVConnection = connectToDAVServer({
+    server: process.env.SERVER,
+    credentials: {
+      username: process.env.USERNAME,
+      password: process.env.PASSWORD,
+    },
+  });
 
   const whatsAppContacts = await getWhatsAppContacts(whatsAppConnection);
   console.log("Received Contacts");
@@ -48,7 +44,6 @@ try {
     cardDAVContacts
   );
 
-  global.matches = matches;
   console.log("Has matches");
 
   const filteredMatches = matches.filter(contactHasNewPhoto);
@@ -68,21 +63,12 @@ try {
 
   // sync cards to server
   const updates = Promise.all(
-    matchesWithUpdatedProfilePictures.map((davVCard, i) => {
-      console.log("Try updating", i);
-      const promise = updateCardOnServer({
+    matchesWithUpdatedProfilePictures.map((davVCard) =>
+      updateCardOnServer({
         client: cardDAVClient,
         card: davVCard,
-      });
-      promise
-        .then(() => {
-          console.log("updated");
-        })
-        .catch((error) =>
-          console.log("there was an error updating", davVCard, error)
-        );
-      return promise;
-    })
+      })
+    )
   );
 
   await updates;
