@@ -1,6 +1,6 @@
 # WhatsApp-to-CardDav
 
-Save WhatsApp profile pictures to your CardDav contact images (including Nextcloud, Google and Apple contacts and more)
+Save the WhatsApp profile pictures of your friends to their CardDav contacts (e.g. on Nextcloud, Google and Apple contacts).
 
 ## Getting started
 
@@ -14,3 +14,9 @@ npm start
 ## Motivation
 
 tbc.
+
+## Sync Targets
+
+- [x] Nextcloud
+- [ ] Apple Contacts
+- [ ] Google Contacts
