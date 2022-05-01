@@ -1,5 +1,6 @@
 import defaultMakeWASocket, {
   useSingleFileAuthState,
+DisconnectReason,
 } from "@adiwajshing/baileys";
 import * as fs from "fs";
 import uniqueBy from "unique-by";
@@ -16,6 +17,19 @@ export default async function connectToWhatsApp() {
   });
 
   sock.ev.on("creds.update", saveState);
+
+sock.ev.on('connection.update', (update) => {
+		const { connection, lastDisconnect } = update;
+
+		if(connection === 'close') {
+			// reconnect if not logged out
+			if((lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut) {
+				connectToWhatsApp()
+			} else {
+				console.log('Connection closed. You are logged out.')
+			}
+		}
+	});
 
   getWhatsAppContacts(sock);
 
