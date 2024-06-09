@@ -1,5 +1,5 @@
 node_modules
 .auth_info
-auth_info_multi.json
+auth_info_baileys
 whatsapp_contacts.json
 .env
