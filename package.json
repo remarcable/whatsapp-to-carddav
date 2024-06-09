@@ -18,11 +18,12 @@
     "test": "jest"
   },
   "dependencies": {
-    "@adiwajshing/baileys": "^4.1.0",
+    "baileys": "^6.7.4",
     "dav": "^1.8.0",
     "dotenv": "^16.0.0",
     "lodash.chunk": "^4.2.0",
     "node-fetch": "^3.2.3",
+    "qrcode-terminal": "^0.12.0",
     "unique-by": "^1.0.0",
     "vcf": "^2.1.1"
   },
