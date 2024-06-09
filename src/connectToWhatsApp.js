@@ -1,11 +1,11 @@
 import defaultMakeWASocket, {
-  useSingleFileAuthState,
+  useMultiFileAuthState,
 DisconnectReason,
-} from "@adiwajshing/baileys";
+} from "baileys";
 import * as fs from "fs";
 import uniqueBy from "unique-by";
 
-const { state, saveState } = useSingleFileAuthState("./auth_info_multi.json");
+const { state, saveCreds } = await useMultiFileAuthState("./auth_info_baileys");
 
 const makeWASocket = defaultMakeWASocket.default;
 
@@ -16,7 +16,7 @@ export default async function connectToWhatsApp() {
     auth: state,
   });
 
-  sock.ev.on("creds.update", saveState);
+  sock.ev.on("creds.update", saveCreds);
 
 sock.ev.on('connection.update', (update) => {
 		const { connection, lastDisconnect } = update;
