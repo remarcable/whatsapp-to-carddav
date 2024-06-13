@@ -1,6 +1,6 @@
 # WhatsApp-to-CardDav
 
-Save the WhatsApp profile pictures of your friends to their CardDav contacts (e.g. on Nextcloud, Google and Apple contacts).
+Save the WhatsApp profile pictures of your friends to their CardDAV contacts (e.g. on Nextcloud, Google and Apple contacts).
 
 ## Getting started
 
