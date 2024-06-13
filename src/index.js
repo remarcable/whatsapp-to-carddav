@@ -9,6 +9,16 @@ import {
 import updateCardOnServer from "./updateCard.js";
 
 try {
+  // promise is not awaited to parallelize getting whatsapp contacts with syncing
+  // DAV contacts
+  const cardDAVConnection = connectToDAVServer({
+    server: process.env.SERVER,
+    credentials: {
+      username: process.env.USERNAME,
+      password: process.env.PASSWORD,
+    },
+  });
+
   const whatsAppConnection = await connectToWhatsApp();
   console.log("Connected to WhatsApp");
 
@@ -21,22 +31,11 @@ try {
 
   console.log("Received Profile Pictures");
 
-  whatsAppConnection.end();
+  const { account: cardDAVAccount, client: cardDAVClient } =
+    await cardDAVConnection;
 
-  // promise is not awaited to parallelize getting whatsapp contacts with syncing
-  // DAV contacts
-  const cardDAVConnection = await connectToDAVServer({
-    server: process.env.SERVER,
-    credentials: {
-      username: process.env.USERNAME,
-      password: process.env.PASSWORD,
-    },
-  });
+  console.log("Connected to DAV Server");
 
-  const {
-    account: cardDAVAccount,
-    client: cardDAVClient,
-  } = await cardDAVConnection;
   for (let ab of cardDAVAccount.addressBooks) {
     const cardDAVContacts = ab.objects;
 
@@ -45,7 +44,7 @@ try {
       cardDAVContacts
     );
 
-    console.log("Has matches");
+    console.log("Has", matches.length, "matches");
 
     const filteredMatches = matches.filter(contactHasNewPhoto);
     console.log(
@@ -63,7 +62,7 @@ try {
     });
 
     // sync cards to server
-    const updates = Promise.all(
+    await Promise.all(
       matchesWithUpdatedProfilePictures.map((davVCard) =>
         updateCardOnServer({
           client: cardDAVClient,
@@ -71,10 +70,11 @@ try {
         })
       )
     );
-
-    await updates;
   }
+
+  whatsAppConnection.end();
   console.log("Done");
+  process.exit(0);
 } catch (error) {
-  console.log("unexpected error:", error);
+  console.log("Unexpected error:", error);
 }
